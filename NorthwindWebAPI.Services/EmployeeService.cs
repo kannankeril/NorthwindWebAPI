@@ -6,7 +6,6 @@ using NorthwindWebAPI.Models;
 
 namespace NorthwindWebAPI.Services
 {
-
     public class EmployeeService
     {
         private EmployeeRepository _employeeRepository;
@@ -29,10 +28,10 @@ namespace NorthwindWebAPI.Services
             return _employeeList;
         }
 
-        public Employee Get(int employeeId)
+        public IEnumerable<Employee> Get(int employeeId)
         {
             if (_employeeList != null && _employeeListStale == false)
-                return _employeeList.FirstOrDefault(emp => emp.EmployeeID == employeeId);
+                return _employeeList.Where(emp => emp.EmployeeID == employeeId);
             else return _employeeRepository.Get(employeeId);
         }
 

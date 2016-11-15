@@ -29,10 +29,10 @@ namespace NorthwindWebAPI.Services
             return _customerList;
         }
 
-        public Customer Get(string customerId)
+        public IEnumerable<Customer> Get(string customerId)
         {
             if (_customerList != null)
-                return _customerList.FirstOrDefault(c => c.CustomerID == customerId);
+                return _customerList.Where(c => c.CustomerID == customerId);
             else return _customerRepository.Get(customerId);
         }
 

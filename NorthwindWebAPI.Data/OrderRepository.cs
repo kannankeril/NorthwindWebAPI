@@ -7,13 +7,19 @@ using NorthwindWebAPI.Models;
 
 namespace NorthwindWebAPI.Data
 {
-    public class OrderRepository : SqlDataSource
+    public class OrderRepository : SqlDataSource<Order>
     {
         private OrderDetailRepository _orderDetailRepository;
         public OrderRepository()
         {
             _orderDetailRepository = new OrderDetailRepository();
         }
+
+        public override Order PopulateRecord(IDataReader reader)
+        {
+            return new Order(reader);
+        }
+
 
         public IEnumerable<Order> Get()
         {
@@ -24,18 +30,11 @@ namespace NorthwindWebAPI.Data
                 + "FROM dbo.Orders ORDERS "
                 + " INNER JOIN dbo.Customers CUSTOMERS ON ORDERS.CustomerID = CUSTOMERS.CustomerID "
                 + " INNER JOIN dbo.Employees EMPLOYEES ON ORDERS.EmployeeID = EMPLOYEES.EmployeeID ";
-            List<Order> orderList = new List<Order>();
 
-            using (IDataReader reader = ExecuteReader(sqlCommand, null, CommandType.Text))
-            {
-                while (reader.Read())
-                    orderList.Add(new Order(reader));
-            }
-
-            return orderList;
+            return base.Get(sqlCommand);
         }
 
-        public Order Get(int OrderId)
+        public IEnumerable<Order> Get(int OrderId)
         {
             var sqlCommand =
                 "SELECT OrderID, ORDERS.CustomerID, ORDERS.EmployeeID, OrderDate, RequiredDate, ShippedDate, ShipVia "
@@ -46,15 +45,8 @@ namespace NorthwindWebAPI.Data
                 + " INNER JOIN dbo.Employees EMPLOYEES ON ORDERS.EmployeeID = EMPLOYEES.EmployeeID "
                 + "WHERE OrderID = @OrderID ";
             var parameters = new SqlParameter[] { new SqlParameter("@OrderID", OrderId) };
-            Order order = null;
 
-            using (IDataReader reader = ExecuteReader(sqlCommand, parameters, CommandType.Text))
-            {
-                if (reader.Read())
-                    order = new Order(reader);
-            }
-
-            return order;
+            return base.Get(sqlCommand, parameters);
         }
 
         public void Add(Order order)
@@ -73,7 +65,7 @@ namespace NorthwindWebAPI.Data
             SqlTransaction sqlTransaction = sqlConnection.BeginTransaction();
             try
             {
-                var orderId = ExecuteScalar(sqlCommand, order.ToParameterArray()
+                var orderId = base.ExecuteScalar(sqlCommand, order.ToParameterArray()
                                             , CommandType.Text, sqlConnection, sqlTransaction);
                 if (orderId == DBNull.Value)
                     throw new NullReferenceException("Order creation failed");
@@ -111,7 +103,7 @@ namespace NorthwindWebAPI.Data
             SqlTransaction sqlTransaction = sqlConnection.BeginTransaction();
             try
             {
-                ExecuteScalar(sqlCommand, order.ToParameterArray()
+                base.ExecuteScalar(sqlCommand, order.ToParameterArray()
                                             , CommandType.Text, sqlConnection, sqlTransaction);
 
                 _orderDetailRepository.Update(order.Order_Details, sqlConnection, sqlTransaction);

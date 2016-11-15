@@ -6,38 +6,31 @@ using NorthwindWebAPI.Models;
 
 namespace NorthwindWebAPI.Data
 {
-    public class CustomerRepository : SqlDataSource
+    public class CustomerRepository : SqlDataSource<Customer>
     {
+        public override Customer PopulateRecord(IDataReader reader)
+        {
+            return new Customer(reader);
+        }
+
+
         public IEnumerable<Customer> Get()
         {
             var sqlCommand = "SELECT CustomerID, CompanyName, ContactName, ContactTitle "
                             + ", [Address], City, Region, PostalCode, Country, Phone, Fax "
                             + " FROM dbo.Customers";
-            List<Customer> customerList = new List<Customer>();
-            using (IDataReader reader = ExecuteReader(sqlCommand, null, CommandType.Text))
-            {
-                while (reader.Read())
-                    customerList.Add(new Customer(reader));
-            }
 
-            return customerList;
+            return base.Get(sqlCommand);
         }
 
-        public Customer Get(string customerId)
+        public IEnumerable<Customer> Get(string customerId)
         {
             var sqlCommand = "SELECT CustomerID, CompanyName, ContactName, ContactTitle "
                             + ", [Address], City, Region, PostalCode, Country, Phone, Fax "
                             + " FROM dbo.Customers WHERE CustomerID = @CustomerID";
             var parameters = new SqlParameter[] { new SqlParameter("@CustomerID", customerId) };
 
-            Customer customer = null;
-            using (IDataReader reader = ExecuteReader(sqlCommand, parameters, CommandType.Text))
-            {
-                if (reader.Read())
-                    customer = new Customer(reader);
-            }
-
-            return customer;
+            return base.Get(sqlCommand, parameters);
         }
 
         public void Add(Customer customer)
@@ -48,7 +41,8 @@ namespace NorthwindWebAPI.Data
                             + ", [Address], City, Region, PostalCode, Country, Phone, Fax) "
                             + "VALUES(@CustomerID, @CompanyName, @ContactName, @ContactTitle "
                             + ", @Address, @City, @Region, @PostalCode, @Country, @Phone, @Fax) ";
-            ExecuteNonQuery(sqlCommand, customer.ToParameterArray(), CommandType.Text);
+
+            base.ExecuteNonQuery(sqlCommand, customer.ToParameterArray());
         }
 
         public void Update(Customer customer)
@@ -59,14 +53,16 @@ namespace NorthwindWebAPI.Data
                             + "     , City = @City, Region = @Region, PostalCode = @PostalCode "
                             + "     , Country = @Country, Phone = @Phone, Fax = @Fax "
                             + " WHERE CustomerID = @CustomerID ";
-            ExecuteNonQuery(sqlCommand, customer.ToParameterArray(), CommandType.Text);
+
+            base.ExecuteNonQuery(sqlCommand, customer.ToParameterArray());
         }
 
         public void Delete(string customerId)
         {
             var sqlCommand = "DELETE FROM dbo.Customers WHERE CustomerID = @CustomerID ";
             var parameters = new SqlParameter[] { new SqlParameter("@CustomerID", customerId) };
-            ExecuteNonQuery(sqlCommand, parameters, CommandType.Text);
+
+            base.ExecuteNonQuery(sqlCommand, parameters);
         }
     }
 }

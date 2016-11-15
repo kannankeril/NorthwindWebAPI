@@ -6,8 +6,13 @@ using NorthwindWebAPI.Models;
 
 namespace NorthwindWebAPI.Data
 {
-    public class EmployeeRepository : SqlDataSource
+    public class EmployeeRepository : SqlDataSource<Employee>
     {
+        public override Employee PopulateRecord(IDataReader reader)
+        {
+            return new Employee(reader);
+        }
+
         public IEnumerable<Employee> Get()
         {
             var sqlCommand = "SELECT EMPLOYEE.EmployeeID, EMPLOYEE.LastName, EMPLOYEE.FirstName, EMPLOYEE.Title, EMPLOYEE.TitleOfCourtesy "
@@ -17,17 +22,11 @@ namespace NorthwindWebAPI.Data
                             + ", EMPLOYEE.ReportsTo, MANAGER.FirstName + ' ' + MANAGER.LastName as Manager "
                             + "FROM dbo.Employees EMPLOYEE "
                             + "   INNER JOIN dbo.Employees MANAGER ON EMPLOYEE.ReportsTo = MANAGER.EmployeeID";
-            List<Employee> employeeList = new List<Employee>();
-            using (IDataReader reader = ExecuteReader(sqlCommand, null, CommandType.Text))
-            {
-                while (reader.Read())
-                    employeeList.Add(new Employee(reader));
-            }
 
-            return employeeList;
+            return base.Get(sqlCommand);
         }
 
-        public Employee Get(int employeeId)
+        public IEnumerable<Employee> Get(int employeeId)
         {
             var sqlCommand = "SELECT EMPLOYEE.EmployeeID, EMPLOYEE.LastName, EMPLOYEE.FirstName, EMPLOYEE.Title, EMPLOYEE.TitleOfCourtesy "
                             + ", EMPLOYEE.BirthDate, EMPLOYEE.HireDate, EMPLOYEE.HomePhone, EMPLOYEE.Extension "
@@ -39,14 +38,7 @@ namespace NorthwindWebAPI.Data
                             + "WHERE EMPLOYEE.EmployeeID = @EmployeeId ";
             var parameters = new SqlParameter[] { new SqlParameter("@EmployeeId", employeeId) };
 
-            Employee employee = null;
-            using (IDataReader reader = ExecuteReader(sqlCommand, parameters, CommandType.Text))
-            {
-                if (reader.Read())
-                    employee = new Employee(reader);
-            }
-
-            return employee;
+            return base.Get(sqlCommand, parameters);
         }
 
         public void Add(Employee employee)
@@ -60,7 +52,7 @@ namespace NorthwindWebAPI.Data
                 + " VALUES(@LastName, @FirstName, @Title, @TitleOfCourtesy, @BirthDate, @HireDate, @Address, @City "
                 + "        , @Region, @PostalCode, @Country, @HomePhone, @Extension, @Photo, @Notes, @ReportsTo, @PhotoPath) ";
 
-            ExecuteNonQuery(sqlCommand, employee.ToParameterArray(), CommandType.Text);
+            base.ExecuteNonQuery(sqlCommand, employee.ToParameterArray());
         }
 
         public void Update(Employee employee)
@@ -73,14 +65,15 @@ namespace NorthwindWebAPI.Data
             + "    , Photo=@Photo, Notes=@Notes, ReportsTo=@ReportsTo, PhotoPath=@PhotoPath "
             + "WHERE EmployeeID = @EmployeeID ";
 
-            ExecuteNonQuery(sqlCommand, employee.ToParameterArray(), CommandType.Text);
+            base.ExecuteNonQuery(sqlCommand, employee.ToParameterArray());
         }
 
         public void Delete(int employeeId)
         {
             var sqlCommand = "DELETE FROM dbo.Employees WHERE EmployeeID = @EmployeeId";
             var parameters = new SqlParameter[] { new SqlParameter("employeeId", employeeId) };
-            ExecuteNonQuery(sqlCommand, parameters, CommandType.Text);
+
+            base.ExecuteNonQuery(sqlCommand, parameters);
         }
     }
 }

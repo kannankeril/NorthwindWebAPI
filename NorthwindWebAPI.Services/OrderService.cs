@@ -45,26 +45,27 @@ namespace NorthwindWebAPI.Services
         /// </summary>
         /// <param name="orderId"></param>
         /// <returns></returns>
-        public Order Get(int orderId)
+        public IEnumerable<Order> Get(int orderId)
         {
-            Order order = null;
+            List<Order> orderList = null;
             if(_orderList != null && !_orderListStale)
             {
                 ///look for order within cached order list
-                order = _orderList.FirstOrDefault(ord => ord.OrderID == orderId);
+                orderList = _orderList.Where(ord => ord.OrderID == orderId).ToList();
             }
 
-            if(order == null)
+            if(orderList == null)
             {
-                order = _orderRepository.Get(orderId);
-                if (order == null)
-                    return order;
+                orderList = _orderRepository.Get(orderId).ToList();
+                if (orderList == null)
+                    return orderList;
             }
 
             ///get details for this order
-            order.Order_Details = _orderDetailRepository.Get(order.OrderID).ToList();
+            foreach (var order in orderList)
+                order.Order_Details = _orderDetailRepository.Get(order.OrderID).ToList();
 
-            return order;
+            return orderList;
         }
 
         /// <summary>

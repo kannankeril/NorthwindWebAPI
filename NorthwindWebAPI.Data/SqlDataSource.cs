@@ -1,19 +1,57 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
 
 namespace NorthwindWebAPI.Data
 {
-    public class SqlDataSource
+    public abstract class SqlDataSource<T> where T : class
     {
         public string ConnectionString { get; set; }
+
+        public abstract T PopulateRecord(IDataReader reader);
 
         public SqlDataSource()
         {
             ConnectionString = ConfigurationManager.ConnectionStrings["NorthwindDbConnection"].ConnectionString;
         }
 
+        #region Generic Get methods
+        public virtual IEnumerable<T> Get(string sqlCommand)
+        {
+            List<T> tList = new List<T>();
+            using (IDataReader reader = ExecuteReader(sqlCommand, null, CommandType.Text))
+            {
+                while (reader.Read())
+                {
+                    var entity = PopulateRecord(reader);
+
+                    tList.Add(entity);
+                }
+            }
+
+            return tList;
+        }
+
+        public virtual IEnumerable<T> Get(string sqlCommand, SqlParameter[] parameters
+                                        , CommandType commandType = CommandType.Text)
+        {
+            List<T> entityList = null;
+            using (IDataReader reader = ExecuteReader(sqlCommand, parameters, commandType))
+            {
+                entityList = new List<T>();
+                while (reader.Read())
+                {
+                    entityList.Add(PopulateRecord(reader));
+                }
+            }
+
+            return entityList.Count > 0 ? entityList : null;
+        }
+        #endregion
+
+        #region Database command execution methods
         public virtual SqlConnection CreateConnection()
         {
             SqlConnection sqlConnection = new SqlConnection(ConnectionString);
@@ -22,7 +60,7 @@ namespace NorthwindWebAPI.Data
         }
 
         protected virtual IDataReader ExecuteReader(string commandText, SqlParameter[] parameters = null
-                                            , CommandType commandType = CommandType.StoredProcedure
+                                            , CommandType commandType = CommandType.Text
                                             , SqlConnection connection = null)
         {
             bool isNewConnection = false;
@@ -55,7 +93,7 @@ namespace NorthwindWebAPI.Data
         }
 
         protected virtual int ExecuteNonQuery(string commandText, SqlParameter[] parameters = null
-                                            , CommandType commandType = CommandType.StoredProcedure
+                                            , CommandType commandType = CommandType.Text
                                             , SqlConnection connection = null
                                             , SqlTransaction transaction = null)
         {
@@ -74,7 +112,7 @@ namespace NorthwindWebAPI.Data
         }
 
         protected virtual object ExecuteScalar(string commandText, SqlParameter[] parameters = null
-                                            , CommandType commandType = CommandType.StoredProcedure
+                                            , CommandType commandType = CommandType.Text
                                             , SqlConnection connection = null
                                             , SqlTransaction transaction = null)
         {
@@ -118,5 +156,6 @@ namespace NorthwindWebAPI.Data
                 sqlCommand.Transaction = transaction;
             return sqlCommand;
         }
+        #endregion
     }
 }

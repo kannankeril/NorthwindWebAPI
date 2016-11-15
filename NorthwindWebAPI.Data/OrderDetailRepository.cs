@@ -7,12 +7,17 @@ using NorthwindWebAPI.Models;
 
 namespace NorthwindWebAPI.Data
 {
-    public class OrderDetailRepository : SqlDataSource
+    public class OrderDetailRepository : SqlDataSource<Order_Detail>
     {
+        public override Order_Detail PopulateRecord(IDataReader reader)
+        {
+            return new Order_Detail(reader);
+        }
+
         #region GET methods
         public IEnumerable<Order_Detail> GET()
         {
-            throw new NotImplementedException("This web service does not allow inserting items outside of an order");
+            throw new NotImplementedException("This web service does not allow retrieving items outside of an order");
         }
 
         /// <summary>
@@ -28,15 +33,8 @@ namespace NorthwindWebAPI.Data
                 + "	INNER JOIN dbo.Products PRODUCT ON DETAILS.ProductID = PRODUCT.ProductID "
                 + "WHERE OrderID = @OrderID ";
             var parameters = new SqlParameter[] { new SqlParameter("@OrderID", orderId) };
-            List<Order_Detail> orderDetailList = new List<Order_Detail>();
 
-            using (IDataReader reader = ExecuteReader(sqlCommand, parameters, CommandType.Text))
-            {
-                while (reader.Read())
-                    orderDetailList.Add(new Order_Detail(reader));
-            }
-
-            return orderDetailList;
+            return base.Get(sqlCommand, parameters);
         }
         #endregion
 
@@ -56,7 +54,7 @@ namespace NorthwindWebAPI.Data
                 + "    (OrderID, ProductID, UnitPrice, Quantity, Discount) "
                 + "VALUES(@OrderID, @ProductID, @UnitPrice, @Quantity, @Discount) ";
 
-            ExecuteNonQuery(sqlCommand, orderItem.ToParameterArray(), CommandType.Text, sqlConnection, sqlTransaction);
+            base.ExecuteNonQuery(sqlCommand, orderItem.ToParameterArray(), CommandType.Text, sqlConnection, sqlTransaction);
         }
         #endregion
 
@@ -75,7 +73,7 @@ namespace NorthwindWebAPI.Data
                 + "   SET UnitPrice = @UnitPrice, Quantity = @Quantity, Discount = @Discount "
                 + "WHERE OrderID = @OrderID AND ProductID = @ProductID ";
 
-            ExecuteNonQuery(sqlCommand, orderDetail.ToParameterArray(), CommandType.Text, sqlConnection, sqlTransaction);
+            base.ExecuteNonQuery(sqlCommand, orderDetail.ToParameterArray(), CommandType.Text, sqlConnection, sqlTransaction);
         }
         #endregion
 
@@ -85,7 +83,8 @@ namespace NorthwindWebAPI.Data
         {
             var sqlCommand = "DELETE FROM dbo.[Order Details] WHERE OrderID = @OrderID ";
             var parameters = new SqlParameter[] { new SqlParameter("@OrderID", orderId) };
-            ExecuteNonQuery(sqlCommand, parameters, CommandType.Text, sqlConnection, sqlTransaction);
+
+            base.ExecuteNonQuery(sqlCommand, parameters, CommandType.Text, sqlConnection, sqlTransaction);
         }
 
         public void Delete(int orderId, int productId, SqlConnection sqlConnection = null, SqlTransaction sqlTransaction = null)
@@ -94,7 +93,8 @@ namespace NorthwindWebAPI.Data
                             + "WHERE OrderID = @OrderID AND ProductID = @ProductID ";
             var parameters = new SqlParameter[] { new SqlParameter("@OrderID", orderId)
                                                 , new SqlParameter("@ProductID", productId) };
-            ExecuteNonQuery(sqlCommand, parameters, CommandType.Text, sqlConnection, sqlTransaction);
+
+            base.ExecuteNonQuery(sqlCommand, parameters, CommandType.Text, sqlConnection, sqlTransaction);
         }
         #endregion
     }
